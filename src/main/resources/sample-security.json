@@ -1,0 +1,33 @@
+[
+  {
+    "order": 2,
+    "methods": [],
+    "endpoints": [
+      "/api/v3/customer"
+    ],
+    "roles": [
+      "ADMIN"
+    ]
+  },
+  {
+    "order": 3,
+    "methods": [],
+    "endpoints": [
+      "/api/v4/customer"
+    ],
+    "roles": [
+      "MANAGER"
+    ]
+  },
+  {
+    "order": 1,
+    "methods": [],
+    "endpoints": [
+      "/api/v1/customer",
+      "/api/v2/customer/**"
+    ],
+    "roles": [
+      "USER"
+    ]
+  }
+]
