@@ -10,10 +10,16 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -43,7 +49,7 @@ public class ProxyService {
             return WebClient.create()
                     .method(request.getMethod())
                     .uri(buildUrl(request))
-                    .headers(headers -> headers.addAll(request.getHeaders()))
+                    .headers(headers -> headers.addAll(extractHeader(request.getHeaders())))
                     .body(BodyInserters.fromDataBuffers(request.getBody()))
                     .retrieve().toEntity(String.class)
                     .onErrorMap(Exception.class, ex -> new ProxyFailedException(ex.getMessage()))
@@ -53,7 +59,7 @@ public class ProxyService {
         return WebClient.create()
                 .method(request.getMethod())
                 .uri(buildUrl(request))
-                .headers(headers -> headers.addAll(request.getHeaders()))
+                .headers(headers -> headers.addAll(extractHeader(request.getHeaders())))
                 .retrieve().toEntity(String.class)
                 .onErrorMap(Exception.class, ex -> new ProxyFailedException(ex.getMessage()))
                 .onErrorMap(WebClientResponseException.class, ex ->
@@ -69,6 +75,26 @@ public class ProxyService {
                 .build().toUri();
         LOG.info("forward to {} '{}'", request.getMethod(), uri);
         return uri;
+    }
+
+    private HttpHeaders extractHeader(HttpHeaders headerIn) {
+        Object userId = null;
+        Object clientId = null;
+        final HttpHeaders headerOut = new HttpHeaders(headerIn);
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken) {
+            final JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) auth;
+            final Jwt token = jwtAuth.getToken();
+            userId = token.getClaim("aud");
+            clientId = token.getClaim("client_id");
+        } else if (auth instanceof BearerTokenAuthentication) {
+            BearerTokenAuthentication opaqueAuth = (BearerTokenAuthentication) auth;
+            userId = opaqueAuth.getTokenAttributes().get("aud");
+            clientId = opaqueAuth.getTokenAttributes().get("client_id");
+        }
+        headerOut.add("user-id", String.valueOf(userId));
+        headerOut.add("client-id", String.valueOf(clientId));
+        return headerOut;
     }
 
     private boolean requiredBody(HttpMethod method) {
