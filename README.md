@@ -14,6 +14,7 @@
      | CLIENT_SECRET        | admin                                     | client secret use for do token introspection          |
      | ROLE_CLAIM           | roles                                     | role name claim from access token                     |
      | SERVICE_CLAIM        | services                                  | service name claim from access token                  |
+     | ENABLE_LOG           | true or false                             | enable logging filter request and response            |
      | INBOUND_LOG          | true or false                             | enable http in coming log request and response        |
      | OUTBOUND_LOG         | true or false                             | enable http out going log request and response        |
      | PC-SCHEMA            | http or https                             | primary container protocal                            |

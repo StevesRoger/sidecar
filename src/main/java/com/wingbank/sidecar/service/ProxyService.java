@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProxyService {
@@ -77,24 +79,22 @@ public class ProxyService {
         return uri;
     }
 
-    private HttpHeaders extractHeader(HttpHeaders headerIn) {
-        Object userId = null;
-        Object clientId = null;
-        final HttpHeaders headerOut = new HttpHeaders(headerIn);
+    private HttpHeaders extractHeader(HttpHeaders original) {
+        final Set<String> headerClaims = StringUtils.commaDelimitedListToSet(System.getenv("HEADER_CLAIM"));
+        final HttpHeaders headers = new HttpHeaders(original);
         final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof JwtAuthenticationToken) {
             final JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) auth;
             final Jwt token = jwtAuth.getToken();
-            userId = token.getClaim("aud");
-            clientId = token.getClaim("client_id");
+            headers.add("user-id", Optional.ofNullable(token.getClaim("aud")).orElse("-1").toString());
+            headers.add("client-id", Optional.ofNullable(token.getClaim("client_id")).orElse("-1").toString());
         } else if (auth instanceof BearerTokenAuthentication) {
             BearerTokenAuthentication opaqueAuth = (BearerTokenAuthentication) auth;
-            userId = opaqueAuth.getTokenAttributes().get("aud");
-            clientId = opaqueAuth.getTokenAttributes().get("client_id");
+            headers.add("user-id", Optional.ofNullable(opaqueAuth.getTokenAttributes().get("aud")).orElse("-1").toString());
+            headers.add("client-id", Optional.ofNullable(opaqueAuth.getTokenAttributes().get("client_id")).orElse("-1").toString());
         }
-        headerOut.add("user-id", String.valueOf(userId));
-        headerOut.add("client-id", String.valueOf(clientId));
-        return headerOut;
+        LOG.debug("header claim, {}", headerClaims);
+        return headers;
     }
 
     private boolean requiredBody(HttpMethod method) {
