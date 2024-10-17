@@ -29,6 +29,7 @@ public final class SecurityUtil {
 
     public static ServerHttpSecurity.AuthorizeExchangeSpec applyAntPatterns(ServerHttpSecurity.AuthorizeExchangeSpec spec) {
         Collection<SecurityEntity> securityEntities = loadSecurityEntity();
+        if (securityEntities.isEmpty()) return spec.pathMatchers("/**").authenticated();
         for (SecurityEntity entity : securityEntities) {
             if (CollectionUtils.isEmpty(entity.getMethods())) {
                 String[] endpoints = entity.getEndpoints().toArray(new String[]{});
