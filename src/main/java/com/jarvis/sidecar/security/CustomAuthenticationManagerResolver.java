@@ -38,8 +38,8 @@ public class CustomAuthenticationManagerResolver implements ReactiveAuthenticati
     private String introspectionUri;
     private String clientId;
     private String clientSecret;
-    private ReactiveAuthenticationManager jwtAuthenticationManager;
-    private ReactiveAuthenticationManager defaultAuthenticationManager;
+    private ReactiveAuthenticationManager jwtManager;
+    private ReactiveAuthenticationManager opaqueManager;
 
     public CustomAuthenticationManagerResolver(String jwkSetUri, String introspectionUri, String clientId, String clientSecret) {
         this.jwkSetUri = jwkSetUri;
@@ -55,24 +55,24 @@ public class CustomAuthenticationManagerResolver implements ReactiveAuthenticati
         LOG.debug("jwkSetUri '{}', introspectionUri '{}', client id '{}', client secret '{}'", jwkSetUri, introspectionUri, clientId, clientSecret);
     }
 
-    public void setJwtWebClient(WebClient jwtWebClient) {
-        Assert.notNull(jwtWebClient, "Web client cannot be null");
-        this.jwtAuthenticationManager = jwt(jwtWebClient);
+    public void setJwtWebClient(WebClient webClient) {
+        Assert.notNull(webClient, "Web client cannot be null");
+        this.jwtManager = jwt(webClient);
     }
 
-    public void setOpaqueWebClient(WebClient opaqueWebClient) {
-        Assert.notNull(opaqueWebClient, "Web client cannot be null");
-        this.defaultAuthenticationManager = opaque(opaqueWebClient);
+    public void setOpaqueWebClient(WebClient webClient) {
+        Assert.notNull(webClient, "Web client cannot be null");
+        this.opaqueManager = opaque(webClient);
     }
 
     @Override
     public Mono<ReactiveAuthenticationManager> resolve(ServerWebExchange exchange) {
         if (isJwtToken(exchange.getRequest())) {
             LOG.info("invoke jwt authentication manager");
-            return Mono.just(jwtAuthenticationManager);
+            return Mono.just(jwtManager);
         }
         LOG.info("invoke opaque authentication manager");
-        return Mono.just(defaultAuthenticationManager);
+        return Mono.just(opaqueManager);
     }
 
     private boolean isJwtToken(ServerHttpRequest request) {
