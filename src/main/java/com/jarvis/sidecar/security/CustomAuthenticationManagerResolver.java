@@ -92,7 +92,7 @@ public class CustomAuthenticationManagerResolver implements ReactiveAuthenticati
         converter.setJwtGrantedAuthoritiesConverter(new CustomJwtGrantedAuthoritiesConverter(roleClaim));
         JwtReactiveAuthenticationManager manager = new JwtReactiveAuthenticationManager(decoderBuilder.build());
         manager.setJwtAuthenticationConverter(converter);
-        return new DelegateReactiveAuthenticationManager(manager);
+        return manager;
     }
 
     private ReactiveAuthenticationManager opaque(WebClient opaqueWebClient) {
@@ -101,7 +101,7 @@ public class CustomAuthenticationManagerResolver implements ReactiveAuthenticati
         if (opaqueWebClient != null)
             introspector = new SpringReactiveOpaqueTokenIntrospector(introspectionUri, opaqueWebClient);
         introspector.setAuthenticationConverter(new CustomOpaqueTokenAuthenticationConverter(roleClaim));
-        return new DelegateReactiveAuthenticationManager(new OpaqueTokenReactiveAuthenticationManager(introspector));
+        return new OpaqueTokenReactiveAuthenticationManager(introspector);
     }
 
     private WebClient webClient(boolean opaque) {
